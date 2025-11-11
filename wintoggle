@@ -126,6 +126,12 @@ run_hook() {
 focus_window() {
     local wid="$1"
     eval $(xdotool getmouselocation --shell)
+
+    if [[ $(xdotool get_num_desktops 2>/dev/null) -gt 1 ]]; then
+        active_desktop=$(xdotool get_desktop 2>/dev/null)
+        xdotool set_desktop_for_window $wid $active_desktop
+    fi
+
     xdotool windowmove "$wid" "$X" "$Y"
     xdotool windowactivate --sync "$wid"
 }
