@@ -138,7 +138,7 @@ focus_window() {
         Y=$(( $Y - $WINDOW_HEIGHT / 2 ))
     fi
 
-    xdotool windowmove --sync "$wid" "$X" "$Y" windowactivate --sync "$wid"
+    xdotool windowmove "$wid" "$X" "$Y" windowactivate --sync "$wid"
 }
 
 # Check for required tools
