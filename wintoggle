@@ -15,6 +15,7 @@ cmd=""
 window_name=""
 on_activate=""
 on_minimize=""
+center_at_cursor=false
 display_help() {
     echo "Toggle a window in or out of the current active monitor."
     echo
@@ -25,6 +26,7 @@ display_help() {
     echo "    -a, --on-activate                Run this command on activate of window."
     echo "    -m, --on-minimize                Run this command on minimize of window."
     echo "    -c, --cmd                        The command to execute that opens new window when its not running if different from window process name."
+    echo "    --center-at-cursor               Displays the window centered on the cursor"
     echo "    -v, --version                    Display version information."
     echo "    -h, --help                       Display command help."
 }
@@ -52,6 +54,9 @@ while [ $# -gt 0 ]; do
     --name | -n)
         window_name="$(echo $2 | xargs)"
         shift
+        ;;
+    --center-at-cursor)
+        center_at_cursor=true
         ;;
     --version | -v)
         echo "v$VERSION"
@@ -126,14 +131,19 @@ run_hook() {
 focus_window() {
     local wid="$1"
     eval $(xdotool getmouselocation --shell)
-
+    
+    if $center_at_cursor; then
+        eval $(xdotool getwindowgeometry --shell --prefix WINDOW_ $wid)
+        X=$(( $X - $WINDOW_WIDTH / 2 ))
+        Y=$(( $Y - $WINDOW_HEIGHT / 2 ))
+    fi
+    
     if [[ $(xdotool get_num_desktops 2>/dev/null) -gt 1 ]]; then
         active_desktop=$(xdotool get_desktop 2>/dev/null)
         xdotool set_desktop_for_window $wid $active_desktop
     fi
 
-    xdotool windowmove "$wid" "$X" "$Y"
-    xdotool windowactivate --sync "$wid"
+    xdotool windowmove "$wid" "$X" "$Y" windowactivate --sync "$wid"
 }
 
 # Check for required tools
