@@ -18,7 +18,7 @@ on_minimize=""
 unmap=false
 center_at_cursor=false
 display_help() {
-    echo "Toggle a window in or out of the current active monitor. Should multiple windows exist for the same process, the oldest window will be used."
+    echo "Toggle a window in or out of the active monitor, using the oldest window if multiple exist."
     echo
     echo "Usage:"
     echo "    wintoggle [options]"
