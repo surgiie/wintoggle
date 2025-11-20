@@ -192,7 +192,8 @@ focus_window() {
         fi
     fi
 
-    xdotool windowmove "$wid" "$X" "$Y" windowactivate --sync "$wid"
+    xdotool windowmove "$wid" "$X" "$Y"
+    xdotool windowactivate --sync "$wid"
 }
 
 # Check for required tools
