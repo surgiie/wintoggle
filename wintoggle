@@ -15,9 +15,10 @@ cmd=""
 window_name=""
 on_activate=""
 on_minimize=""
+unmap=false
 center_at_cursor=false
 display_help() {
-    echo "Toggle a window in or out of the current active monitor."
+    echo "Toggle a window in or out of the active monitor, using the oldest window if multiple exist."
     echo
     echo "Usage:"
     echo "    wintoggle [options]"
@@ -26,7 +27,8 @@ display_help() {
     echo "    -a, --on-activate                Run this command on activate of window."
     echo "    -m, --on-minimize                Run this command on minimize of window."
     echo "    -c, --cmd                        The command to execute that opens new window when its not running if different from window process name."
-    echo "    --center-at-cursor               Displays the window centered on the cursor"
+    echo "    -u, --unmap                      Also removes the window from the window list when hiding."
+    echo "    --center-at-cursor               Displays the window centered on the cursor."
     echo "    -v, --version                    Display version information."
     echo "    -h, --help                       Display command help."
 }
@@ -55,6 +57,9 @@ while [ $# -gt 0 ]; do
         window_name="$(echo $2 | xargs)"
         shift
         ;;
+    --unmap | -q)
+        unmap=true
+        ;;
     --center-at-cursor)
         center_at_cursor=true
         ;;
@@ -80,17 +85,42 @@ if [[ -z "$window_name" ]]; then
     exit 1
 fi
 
+get_window_state() {
+    local wid="$1"
+
+    local state="$(xprop -id "$wid" _NET_WM_STATE 2>/dev/null)"
+    if [[ $state =~ "not found" ]]; then
+        state="$(xprop -id "$wid" WM_STATE 2>/dev/null)"
+        if [[ $state =~ "not found" ]]; then
+            return 1
+        fi
+    fi
+
+    echo "$state"
+    return 0
+}
+
 get_window_id() {
     local pattern="$1"
     local pid
-    pids=$(pgrep "$pattern" 2>/dev/null) # Gets ALL matching processes
-    for pid in $pids; do                 # Check each one for a window
-        wid=$(wmctrl -lp 2>/dev/null | awk -v pid="$pid" '$3 == pid {print $1; exit}')
-        if [[ -n "$wid" ]]; then
-            echo "$wid"
-            return 0
-        fi
+    local pids=$(pgrep "$pattern" 2>/dev/null) # Gets ALL matching processes
+    local wid
+    for pid in $pids; do                       # Check each one for a window
+        local wids=$(xdotool search --pid "$pid" 2>/dev/null | sort)
+        for wid in $wids; do                   # Check each for being a displayable window
+            if [[ -z "$wid" ]]; then
+                continue
+            fi
+
+            local state=$(get_window_state "$wid")
+            if [[ -n "$state" ]]; then
+                echo "$wid"
+                return 0
+            fi
+        done
     done
+
+    return 1
 }
 
 wait_for_window() {
@@ -127,6 +157,16 @@ run_hook() {
     }
 }
 
+is_window_unmapped() {
+    local wid="$1"
+
+    if [[ "${state,,}" =~ "withdrawn" ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
 # Improved focus function with better X11 handling
 focus_window() {
     local wid="$1"
@@ -138,12 +178,22 @@ focus_window() {
         Y=$(($Y - $WINDOW_HEIGHT / 2))
     fi
 
-    if [[ $(xdotool get_num_desktops 2>/dev/null) -gt 1 ]]; then
-        active_desktop=$(xdotool get_desktop 2>/dev/null)
-        xdotool set_desktop_for_window $wid $active_desktop
+    if $unmap && is_window_unmapped $wid; then
+        # No --sync for a smoother experience
+        xdotool windowmap "$wid"
     fi
 
-    xdotool windowmove "$wid" "$X" "$Y" windowactivate --sync "$wid"
+    if [[ $(xdotool get_num_desktops 2>/dev/null) -gt 1 ]]; then
+        active_desktop=$(xdotool get_desktop 2>/dev/null)
+        window_desktop=$(xdotool get_desktop_for_window "$wid" 2>/dev/null)
+
+        if [[ "$active_desktop" != "$window_desktop" ]]; then
+            xdotool set_desktop_for_window $wid $active_desktop
+        fi
+    fi
+
+    xdotool windowmove "$wid" "$X" "$Y"
+    xdotool windowactivate --sync "$wid"
 }
 
 # Check for required tools
@@ -187,7 +237,7 @@ echo "Window Process Name: $window_name"
 echo "Window ID: $window_id"
 
 state=""
-if ! state="$(xprop -id "$window_id" _NET_WM_STATE 2>/dev/null)"; then
+if ! state="$(get_window_state "$window_id")"; then
     echo "❌ Could not get window state for ID: $window_id"
     exit 1
 fi
@@ -211,7 +261,12 @@ if [[ ${state,,} == *"_net_wm_state_hidden"* ]] || ! $has_focus; then
     run_hook "$on_activate"
 else
     echo "Window Action: Hide"
-    # Use xdotool for minimize (wmctrl doesn't have a minimize option)
-    xdotool windowminimize --sync "$window_id" 2>/dev/null
+    if $unmap; then
+        # Unmap the window instead of just minimizing
+        xdotool windowunmap --sync "$window_id" 2>/dev/null
+    else
+        # Use xdotool for minimize (wmctrl doesn't have a minimize option)
+        xdotool windowminimize --sync "$window_id" 2>/dev/null
+    fi
     run_hook "$on_minimize"
 fi
