@@ -9,7 +9,7 @@ display_logo() {
     ${NC}"
 }
 
-VERSION="0.2.0"
+VERSION="0.3.0"
 
 cmd=""
 window_name=""
@@ -105,9 +105,9 @@ get_window_id() {
     local pid
     local pids=$(pgrep "$pattern" 2>/dev/null) # Gets ALL matching processes
     local wid
-    for pid in $pids; do                       # Check each one for a window
+    for pid in $pids; do # Check each one for a window
         local wids=$(xdotool search --pid "$pid" 2>/dev/null | sort)
-        for wid in $wids; do                   # Check each for being a displayable window
+        for wid in $wids; do # Check each for being a displayable window
             if [[ -z "$wid" ]]; then
                 continue
             fi
@@ -197,7 +197,7 @@ focus_window() {
 }
 
 # Check for required tools
-for tool in xdotool wmctrl xprop pgrep bc; do
+for tool in xdotool xprop pgrep bc; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "❌ Required tool not found: $tool"
         exit 1
@@ -265,7 +265,6 @@ else
         # Unmap the window instead of just minimizing
         xdotool windowunmap --sync "$window_id" 2>/dev/null
     else
-        # Use xdotool for minimize (wmctrl doesn't have a minimize option)
         xdotool windowminimize --sync "$window_id" 2>/dev/null
     fi
     run_hook "$on_minimize"

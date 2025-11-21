@@ -3,7 +3,7 @@
 A bash cli that toggles a window in or out of the current active monitor.
 
 ## Dependencies
-- `wmctrl`
+
 - `xdotool`
 - `pgrep`
 
@@ -46,5 +46,5 @@ If you'd like to execute some scripts or commands during activate and minimize e
 to play some sounds during these events, here's how you could go about it:
 
 ```bash
-wintoggle --name "Firefox" --on-activate "ffplay -nodisp -autoexit $HOME/sounds/activate.mp3" --on-minimize "ffplay -nodisp -autoexit $HOME/sounds/minimize.mp3"
+wintoggle --name "firefox" --on-activate "ffplay -nodisp -autoexit $HOME/sounds/activate.mp3" --on-minimize "ffplay -nodisp -autoexit $HOME/sounds/minimize.mp3"
 ```
