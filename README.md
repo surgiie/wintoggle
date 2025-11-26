@@ -1,11 +1,16 @@
 # wintoggle
 
+[![CI](https://github.com/surgiie/wintoggle/actions/workflows/ci.yml/badge.svg)](https://github.com/surgiie/wintoggle/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/surgiie/wintoggle)](LICENSE.md)
+
 A bash cli that toggles a window in or out of the current active monitor.
 
 ## Dependencies
 
 - `xdotool`
+- `xprop`
 - `pgrep`
+- `bc`
 
 ## Install
 
@@ -48,3 +53,19 @@ to play some sounds during these events, here's how you could go about it:
 ```bash
 wintoggle --name "firefox" --on-activate "ffplay -nodisp -autoexit $HOME/sounds/activate.mp3" --on-minimize "ffplay -nodisp -autoexit $HOME/sounds/minimize.mp3"
 ```
+
+### Unmapping Windows
+
+You can use the `--unmap` flag to remove the window from the window list when hiding (instead of just minimizing):
+
+```bash
+wintoggle --name "firefox" --unmap
+```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
